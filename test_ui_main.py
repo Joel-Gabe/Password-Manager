@@ -1,12 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
-
 class MyMainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
 
+        self.setupUi()
 
         self.accountCount = 0
 
@@ -20,9 +19,9 @@ class MyMainWindow(QtWidgets.QMainWindow):
         }
 
     def setupUi(self):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.setObjectName("MainWindow")
+        self.resize(800, 600)
+        self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
@@ -48,27 +47,26 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         self.scrollArea.setWidget(self.widget)
         self.verticalLayout_2.addWidget(self.scrollArea)
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(self)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 24))
         self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(self)
         self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
+        self.setStatusBar(self.statusbar)
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.retranslateUi()
+        QtCore.QMetaObject.connectSlotsByName(self)
 
     
         self.pushButtonCreateNewAccount.clicked.connect(self.openCreateNewAccountDialog)
     
 
-    def retranslateUi(self, MainWindow):
+    def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-
-        
+        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
+  
     
     def addButtonEdit(self):
         
@@ -136,7 +134,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
     def openDeleteDialog(self):
         
         sender = self.getSender(self)
-        self.deleteDialog = QtWidgets.QDialog(MainWindow)
+        self.deleteDialog = QtWidgets.QDialog(self)
         self.deleteDialogui = Ui_Delete_Dialog()
         self.deleteDialogui.setupUi(self.deleteDialog)
         self.deleteDialog.setWindowModality(QtCore.Qt.ApplicationModal)
@@ -159,7 +157,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         index = list(self.accounts['buttons_edit'].keys())[list(self.accounts['buttons_edit'].values()).index(sender)]
         
-        self.editDialog = QtWidgets.QDialog(MainWindow)
+        self.editDialog = QtWidgets.QDialog(self)
         self.editDialogui = Ui_Edit_Dialog()
         self.editDialogui.setupUi(self.editDialog)
         self.editDialog.setWindowModality(QtCore.Qt.ApplicationModal)
@@ -179,7 +177,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
     def openCreateNewAccountDialog(self):
 
 
-        self.createNewAccountDialog = QtWidgets.QDialog(MainWindow)
+        self.createNewAccountDialog = QtWidgets.QDialog(self)
         self.createNewAccountDialogui = Ui_Create_New_Account_Dialog()
         self.createNewAccountDialogui.setupUi(self.createNewAccountDialog)
         self.createNewAccountDialog.setWindowModality(QtCore.Qt.ApplicationModal)
@@ -371,6 +369,5 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = MyMainWindow()
-    MainWindow.setupUi()
     MainWindow.show()
     sys.exit(app.exec_())
