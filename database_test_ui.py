@@ -1,8 +1,16 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sqlite3
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+
 class MyMainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
+        self.private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        self.public_key = self.private_key.public_key()
         super().__init__()
 
         self.setupUi()
@@ -213,13 +221,36 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.createNewAccountDialog.accepted.connect(lambda: self.addAccount(self.createNewAccountDialogui.lineEditAccount.text(), self.createNewAccountDialogui.lineEditUsername.text(), self.createNewAccountDialogui.lineEditPassword.text()))
         self.createNewAccountDialog.accepted.connect(self.save_new_account)
         self.createNewAccountDialog.show()
+    def encrypt_password(self, password):
+        # Serialize the public key
+        serialized_public_key = self.public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+        # Load the serialized public key
+        public_key = serialization.load_pem_public_key(serialized_public_key)
+
+        # Encrypt the password using RSA public key
+        ciphertext = public_key.encrypt(
+            password.encode('utf-8'),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return ciphertext
+
     def save_new_account(self):
         account_name = self.createNewAccountDialogui.lineEditAccount.text()
         username = self.createNewAccountDialogui.lineEditUsername.text()
         password = self.createNewAccountDialogui.lineEditPassword.text()
-
+        # Encrypt the password using RSA public key
+        encrypted_password = self.encrypt_password(password)
         # Add the account to the SQLite database
-        self.add_account_to_db(account_name, username, password)
+        self.add_account_to_db(account_name, username, encrypted_password)
 
     def updateAccount(self, index):
 
