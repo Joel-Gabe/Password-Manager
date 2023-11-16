@@ -201,9 +201,9 @@ class MyMainWindow(QtWidgets.QMainWindow):
                                                                 #                          This is only a temporary fix
                                                                 #                          To make it permanent, make a 
                                                                 #                          form layout and add the two seperately
-        self.editDialogui.lineEditUsername.setText(f'{self.accounts['labels_username'][index].text()[10:]}')
-        self.editDialogui.lineEditPassword.setText(f'{self.accounts['labels_password'][index].text()[10:]}')
-        self.editDialogui.labelAccount.setText(f'{self.accounts['labels_account_name'][index].text()}')
+        self.editDialogui.lineEditUsername.setText(f'{self.accounts["labels_username"][index].text()[10:]}')
+        self.editDialogui.lineEditPassword.setText(f'{self.accounts["labels_password"][index].text()[10:]}')
+        self.editDialogui.labelAccount.setText(f'{self.accounts["labels_account_name"][index].text()}')
         
         self.editDialog.rejected.connect(lambda: self.editDialog.close())
         self.editDialog.accepted.connect(lambda: self.updateAccount(index))
