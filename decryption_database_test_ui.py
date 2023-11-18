@@ -232,6 +232,10 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.conn.commit()
         
     def openDeleteDialog(self):
+
+        if self.showPasswords == False:
+            self.openDecryptFirstDialog()
+            return
         
         sender = self.getSender(self)
         self.deleteDialog = QtWidgets.QDialog(self)
@@ -251,6 +255,10 @@ class MyMainWindow(QtWidgets.QMainWindow):
         return object.sender()
 
     def openEditDialog(self):
+
+        if self.showPasswords == False:
+            self.openDecryptFirstDialog()
+            return
 
         sender = self.getSender(self)
 
@@ -290,6 +298,10 @@ class MyMainWindow(QtWidgets.QMainWindow):
                                                                             self.createNewAccountDialogui.lineEditPassword.text(),
                                                                             'creating'))
         self.createNewAccountDialog.show()
+
+    def openDecryptFirstDialog(self):
+        self.decryptFirstDialog = Ui_Decrypt_First_Dialog(self)
+        self.decryptFirstDialog.show()
     
     def openDragAndDropForm(self):
 
@@ -334,7 +346,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
             private_key = serialization.load_pem_private_key(
                 privateKeyFile.read(),
                 password=None,
-        ) 
+        )
 
         for password in ciphertexts:
             id = cursor.execute("SELECT id FROM accounts WHERE password = ?", (password)).fetchone()[0]
@@ -349,7 +361,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 self.wrong_Pem_Error = Ui_Wrong_Pem_Error_Dialog(self)
                 self.wrong_Pem_Error.show()
                 break
-                
+
 
             plaintext = str(self.decryptPassword(password[0], private_key)).strip("b'").rstrip("'")
 
@@ -410,6 +422,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         cursor.execute("UPDATE accounts SET username = ? WHERE id = ?", (self.editDialogui.lineEditUsername.text(), id))
 
+        
         updated_password = self.encrypt_password(self.editDialogui.lineEditPassword.text())
 
         cursor.execute("UPDATE accounts SET password = ? WHERE id = ?", (updated_password, id))
@@ -697,7 +710,37 @@ class Ui_Wrong_Pem_Error_Dialog(QtWidgets.QDialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label.setText(_translate("Dialog", "Error decrypting passwords. Are you sure you\'re using the right .pem file?"))
+
+class Ui_Decrypt_First_Dialog(QtWidgets.QDialog):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
         
+        self.setObjectName("Dialog")
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.resize(307, 217)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(self)
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setWordWrap(True)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self)
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.verticalLayout.addWidget(self.buttonBox)
+
+        self.retranslateUi(self)
+        self.buttonBox.accepted.connect(self.accept) # type: ignore
+        self.buttonBox.rejected.connect(self.reject) # type: ignore
+        QtCore.QMetaObject.connectSlotsByName(self)
+
+    def retranslateUi(self, Dialog):
+        _translate = QtCore.QCoreApplication.translate
+        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        self.label.setText(_translate("Dialog", "To edit or delete an account you must decrypt the information first."))
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
