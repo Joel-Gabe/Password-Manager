@@ -338,7 +338,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
     
     def decryptPasswords(self, filename):
 
-        self.showPasswords = True
+        
         cursor = self.conn.cursor()
         ciphertexts = cursor.execute("SELECT password FROM accounts").fetchall()
 
@@ -360,12 +360,14 @@ class MyMainWindow(QtWidgets.QMainWindow):
             if plaintext == '0':
                 self.wrong_Pem_Error = Ui_Wrong_Pem_Error_Dialog(self)
                 self.wrong_Pem_Error.show()
-                break
+                return
 
-
+        
             plaintext = str(self.decryptPassword(password[0], private_key)).strip("b'").rstrip("'")
 
             self.accounts['labels_password'][id].setText(f'Password:\t{plaintext}')
+        
+        self.showPasswords = True
             
 
     def decryptPassword(self, ciphertext, private_key):
