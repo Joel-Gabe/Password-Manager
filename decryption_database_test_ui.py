@@ -11,6 +11,8 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         super().__init__()
 
+        self.passwordsDecrypted = False
+
         self.setupUi()
 
         self.conn = sqlite3.connect('accounts.db')    
@@ -23,8 +25,6 @@ class MyMainWindow(QtWidgets.QMainWindow):
             'buttons_delete':{},
             'layouts':{},
         }
-
-        self.showPasswords = False
 
         # Only runs self.createKeys() when the table for the public key doesn't exist
         #  - assumes the private key hasn't been created yet either
@@ -115,9 +115,18 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.verticalLayout.addWidget(self.pushButtonCreateNewAccount)
 
         self.pushButtonDecryptPasswords = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButtonDecryptPasswords.setText("Decrypt Passwords")
+        self.pushButtonDecryptPasswords.setText("Show Passwords")
         self.pushButtonDecryptPasswords.setObjectName("pushButtonDecryptPasswords")
-        self.verticalLayout.addWidget(self.pushButtonDecryptPasswords)
+
+        self.pushButtonEncryptPasswords = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButtonEncryptPasswords.setText("Hide Passwords")
+        self.pushButtonDecryptPasswords.setObjectName("pushButtonEncryptPasswords")
+
+        self.encryptDecryptLayout = QtWidgets.QHBoxLayout()
+        self.encryptDecryptLayout.addWidget(self.pushButtonEncryptPasswords)
+        self.encryptDecryptLayout.addWidget(self.pushButtonDecryptPasswords)
+
+        self.verticalLayout.addLayout(self.encryptDecryptLayout)
 
         self.verticalLayout_2.addLayout(self.verticalLayout)
 
@@ -145,16 +154,22 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
 
+        self.setDecryptEncryptButtonMode()
+
     
         self.pushButtonCreateNewAccount.clicked.connect(self.openCreateNewAccountDialog)
         self.pushButtonDecryptPasswords.clicked.connect(self.openDragAndDropForm)
+        self.pushButtonEncryptPasswords.clicked.connect(self.hidePassowords)
     
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("MainWindow", "MainWindow"))
   
-    
+    def setDecryptEncryptButtonMode(self):
+        self.pushButtonDecryptPasswords.setEnabled(not self.passwordsDecrypted)
+        self.pushButtonEncryptPasswords.setEnabled(self.passwordsDecrypted)
+
     def addButtonEdit(self, id):
         
         self.accounts['buttons_edit'][id] = QtWidgets.QPushButton("Edit")
@@ -175,7 +190,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
     def addLabelPassword(self, id, password):
 
-        if self.showPasswords:
+        if self.passwordsDecrypted:
             self.accounts['labels_password'][id] = QtWidgets.QLabel(f"Password:\t{password}")
         else:
             self.accounts['labels_password'][id] = QtWidgets.QLabel(f"Password:\t********")
@@ -233,7 +248,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         
     def openDeleteDialog(self):
 
-        if self.showPasswords == False:
+        if self.passwordsDecrypted == False:
             self.openDecryptFirstDialog()
             return
         
@@ -256,7 +271,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
     def openEditDialog(self):
 
-        if self.showPasswords == False:
+        if self.passwordsDecrypted == False:
             self.openDecryptFirstDialog()
             return
 
@@ -361,13 +376,14 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 self.wrong_Pem_Error = Ui_Wrong_Pem_Error_Dialog(self)
                 self.wrong_Pem_Error.show()
                 return
-
-        
-            plaintext = str(self.decryptPassword(password[0], private_key)).strip("b'").rstrip("'")
+            
+            # Changes the binary variable we get from decryptPassword to a string that can be used in the setText() method
+            plaintext = self.decryptPassword(password[0], private_key).decode('ascii')
 
             self.accounts['labels_password'][id].setText(f'Password:\t{plaintext}')
         
-        self.showPasswords = True
+        self.passwordsDecrypted = True
+        self.setDecryptEncryptButtonMode()
             
 
     def decryptPassword(self, ciphertext, private_key):
@@ -390,7 +406,13 @@ class MyMainWindow(QtWidgets.QMainWindow):
             return str(0)
         return plaintext
 
+    def hidePassowords(self):
 
+        for password in self.accounts['labels_password']:
+            self.accounts['labels_password'][password].setText("Password:\t********")
+
+        self.passwordsDecrypted = False
+        self.setDecryptEncryptButtonMode()
     
     def getCurrentId(self):
 
@@ -440,7 +462,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 self.accounts[type][id].setText(f'Username:\t{self.editDialogui.lineEditUsername.text()}')
             
             case 'labels_password':
-                if self.showPasswords:
+                if self.passwordsDecrypted:
                     self.accounts[type][id].setText(f'Password:\t{self.editDialogui.lineEditPassword.text()}')
                 else:
                     self.accounts[type][id].setText(f'Password:\t********')
@@ -617,7 +639,7 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
         self.setObjectName("Dialog")
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         self.resize(450, 350)
-        self.setMinimumSize(QtCore.QSize(400, 300))
+        self.setMinimumSize(QtCore.QSize(450, 350))
         self.setAcceptDrops(True)
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -675,7 +697,7 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.label.setText(_translate("Dialog", "Drag and drop your private_key.pem file here"))
+        self.label.setText(_translate("Dialog", "Drag and drop your private_key.pem file here to decrypt your passwords"))
 
 class Ui_Wrong_Pem_Error_Dialog(QtWidgets.QDialog):
     
