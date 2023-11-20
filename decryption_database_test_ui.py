@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 import sqlite3
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-import sys
+import sys, os
 
 class MyMainWindow(QtWidgets.QMainWindow):
 
@@ -322,6 +322,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         self.dragAndDropDialog = Ui_Drag_and_Drop_Dialog(self)
         self.dragAndDropDialog.show()
+    
 
     def getSerializedPublicKey(self):
 
@@ -644,7 +645,7 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(self)
-        self.label.setMinimumSize(QtCore.QSize(400, 300))
+        self.label.setMinimumSize(QtCore.QSize(400, 250))
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setWordWrap(True)
         self.label.setObjectName("label")
@@ -655,6 +656,10 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
         ''')
         self.label.setAcceptDrops(True)
         self.verticalLayout.addWidget(self.label)
+
+        self.fileDialogPushButton = QtWidgets.QPushButton("Open file explorer")
+        self.fileDialogPushButton.clicked.connect(self.openFileDialog)
+        self.verticalLayout.addWidget(self.fileDialogPushButton)
 
         self.retranslateUi(self)
         QtCore.QMetaObject.connectSlotsByName(self)
@@ -693,6 +698,20 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
 
         else:
             event.ignore()
+
+    def openFileDialog(self):
+
+        file_filter = 'Private key (*.pem)'
+        filepath = QtWidgets.QFileDialog.getOpenFileName(
+            parent = self,
+            caption = 'Select your private_key.pem file',
+            directory = os.getcwd(),
+            filter = file_filter
+
+        )
+        
+        self.close()
+        MainWindow.decryptPasswords(filepath[0])
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -754,12 +773,14 @@ class Ui_Decrypt_First_Dialog(QtWidgets.QDialog):
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
-        self.verticalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.addWidget(self.buttonBox)        
 
         self.retranslateUi(self)
         self.buttonBox.accepted.connect(self.accept) # type: ignore
         self.buttonBox.rejected.connect(self.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(self)
+
+    
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
