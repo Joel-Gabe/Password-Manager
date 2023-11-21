@@ -36,6 +36,8 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.create_table()
 
         self.load_accounts()
+
+        self.private_key_file_path = None
         
         # WILL BE ABLE TO UPDATE SOON
         self.defaultOrganizeMode = "A -> Z"
@@ -210,43 +212,51 @@ class MyMainWindow(QtWidgets.QMainWindow):
         
         if mode == self.comboBoxAccountOrganizerModes[0]: # A TO Z
             
-            account_name_list = []
-            # gets a list of all the account names
-            for id in self.accounts['labels_account_name']:
-                account_name_list.append(self.accounts['labels_account_name'][id].text())
-            
-            # alphabetizes them while ignoring uppercase vs lowercase      THIS PART
-            alphabetized_account_name_list = sorted(account_name_list, key = str.casefold)
-
-            cursor = self.conn.cursor()
-            # gets a list of UNIQUE ids that are in alphabetical order with respect to the id's corresponding account name
-            alphabetical_database_ids = []
-            for account_name in alphabetized_account_name_list:
-                id = cursor.execute("SELECT id FROM accounts WHERE account_name = ?", (account_name,)).fetchall()
-                if id not in alphabetical_database_ids:
-                    alphabetical_database_ids.append(id)
-            # creates a list of just numbers, unlike lists which the SQLite database provides
-            # just numbers can be worked with much easier
-            alphabetical_ids = []
-            for list in alphabetical_database_ids:
-                for id in list:
-                    alphabetical_ids.append(id[0])
-
-            # adds the account back to the view, the 'organizing' argument for the nature parameter will keep it from
-            # being added to the database for a second time
-            for id in alphabetical_ids:
-                info = cursor.execute("SELECT account_name, username, password FROM accounts WHERE id = ?", (id,)).fetchall()
-                account_name = info[0][0]
-                username = info[0][1]
-                password = info[0][2]
-                self.addAccount(id, account_name, username, password, 'organizing')
+            self.alphabetizeAccounts('forward')
 
         if mode == self.comboBoxAccountOrganizerModes[1]: # Z TO A
-            print("Z TO A")
+            self.alphabetizeAccounts('backward')
 
     
         
+    def alphabetizeAccounts(self, direction):
+        account_name_list = []
+        # gets a list of all the account names
+        for id in self.accounts['labels_account_name']:
+            account_name_list.append(self.accounts['labels_account_name'][id].text())
+        
+        # alphabetizes them while ignoring uppercase vs lowercase      THIS PART
+        alphabetized_account_name_list = sorted(account_name_list, key = str.casefold)
 
+        if direction == 'backward':
+            alphabetized_account_name_list.reverse()
+
+        cursor = self.conn.cursor()
+        # gets a list of UNIQUE ids that are in alphabetical order with respect to the id's corresponding account name
+        alphabetical_database_ids = []
+        for account_name in alphabetized_account_name_list:
+            id = cursor.execute("SELECT id FROM accounts WHERE account_name = ?", (account_name,)).fetchall()
+            if id not in alphabetical_database_ids:
+                alphabetical_database_ids.append(id)
+        # creates a list of just numbers, unlike lists which the SQLite database provides
+        # just numbers can be worked with much easier
+        alphabetical_ids = []
+        for list in alphabetical_database_ids:
+            for id in list:
+                alphabetical_ids.append(id[0])
+
+        # adds the account back to the view, the 'organizing' argument for the nature parameter will keep it from
+        # being added to the database for a second time
+        for id in alphabetical_ids:
+            info = cursor.execute("SELECT account_name, username, password FROM accounts WHERE id = ?", (id,)).fetchall()
+            account_name = info[0][0]
+            username = info[0][1]
+            if self.private_key_file_path:
+                password = self.decryptPassword(info[0][2], 0, self.private_key_file_path).decode('ascii')
+            else:
+                password = '********'
+            
+            self.addAccount(id, account_name, username, password, 'organizing')
 
 
     def setDecryptEncryptButtonMode(self):
@@ -474,7 +484,14 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.setDecryptEncryptButtonMode()
             
 
-    def decryptPassword(self, ciphertext, private_key):
+    def decryptPassword(self, ciphertext, private_key, private_key_file_path = None):
+        
+        if private_key_file_path:
+            with open(private_key_file_path, 'rb') as privateKeyFile:
+                private_key = serialization.load_pem_private_key(
+                privateKeyFile.read(),
+                password=None,
+        )
 
         # This will get caught when the wrong .pem file is provided since the 
         # private_key.decrypt() will throw an error
@@ -499,6 +516,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         for password in self.accounts['labels_password']:
             self.accounts['labels_password'][password].setText("Password:\t********")
 
+        self.private_key_file_path = None
         self.passwordsDecrypted = False
         self.setDecryptEncryptButtonMode()
     
@@ -776,6 +794,7 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
             
             if filepath_ending == '.pem':
                 self.close()
+                MainWindow.private_key_file_path = filepath
                 MainWindow.decryptPasswords(filepath)
             else:
                 
@@ -798,6 +817,7 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
         )
 
         self.close()
+        MainWindow.private_key_file_path = filepath[0]
         MainWindow.decryptPasswords(filepath[0])
 
     def retranslateUi(self, Dialog):
