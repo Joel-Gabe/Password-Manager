@@ -12,7 +12,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         self.passwordsDecrypted = False
-
+        self.onStartup = True
         self.setupUi()
 
         self.conn = sqlite3.connect('accounts.db')    
@@ -46,6 +46,11 @@ class MyMainWindow(QtWidgets.QMainWindow):
         # WILL BE ABLE TO UPDATE SOON
         self.defaultOrganizeMode = "A -> Z"
         self.organizeAccounts(self.getOrganizeMode(), self.getDisplayIds(), self.lineEditSearchAccounts.text())
+        self.onStartup = False
+        try:
+            self.current_dated_id = cursor.execute("SELECT dated_id FROM accounts").fetchall()[-1][0]
+        except Exception:
+            self.current_dated_id = 0
 
 
     def create_table(self):
@@ -55,7 +60,8 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 id INTEGER PRIMARY KEY,
                 account_name TEXT,
                 username TEXT,
-                password TEXT
+                password TEXT,
+                dated_id INTEGER
             )
         ''')
         self.conn.commit()
@@ -96,9 +102,9 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         self.conn.commit()
 
-    def add_account_to_db(self, id, account, username, password):
+    def add_account_to_db(self, id, account, username, password, dated_id):
         cursor = self.conn.cursor()
-        cursor.execute('INSERT INTO accounts VALUES (?, ?, ?, ?)', (id, account, username, password))
+        cursor.execute('INSERT INTO accounts VALUES (?, ?, ?, ?, ?)', (id, account, username, password, dated_id))
         self.conn.commit()
 
     def load_accounts(self):
@@ -138,11 +144,12 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.lineEditSearchAccounts.setPlaceholderText("Search")
         self.lineEditSearchAccounts.setMaximumSize(100,20)
 
-        self.comboBoxAccountOrganizerModes = ["A -> Z", "Z -> A"]
+        self.comboBoxAccountOrganizerModes = ["A -> Z", "Z -> A", "Newest -> Oldest", "Oldest -> Newest"]
         
         self.comboBoxAccountOrganizer = QtWidgets.QComboBox(self.centralwidget)
         self.comboBoxAccountOrganizer.addItems(self.comboBoxAccountOrganizerModes)
         self.comboBoxAccountOrganizer.setObjectName("comboBoxAccountOrganizer")
+        self.comboBoxAccountOrganizer.setMaximumSize(120,20)
         
 
         self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -293,7 +300,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         # this hides all the accounts that aren't in the display ids and removes them from the scrollareawidgetcontents layout
         for id in self.accounts['layouts']: 
-            if id in displayIds: # if the id is in the display ids, delete it since it will be added later in self.alphabetizeAccounts
+            if id in displayIds: # if the id is in the display ids, delete it since it will be added later in self.alphabetizeIds
                 self.deleteAccount(self.display_accounts, id, 'organizing')
             if id not in displayIds: # if it isn't, remove the layout from the scrollareawidgetcontents layout and set the rest of the widgets
                                      # to not visible
@@ -303,14 +310,44 @@ class MyMainWindow(QtWidgets.QMainWindow):
                     else:
                         self.accounts[category][id].setVisible(False)
         
-        if mode == self.comboBoxAccountOrganizerModes[0]: # A TO Z
+        if mode == self.comboBoxAccountOrganizerModes[0]: # A to Z
             
-            self.alphabetizeAccounts(displayIds, 'forward', criteria)
+            alphabetized_ids = self.alphabetizeIds(displayIds, 'A to Z', criteria)
+            self.sortAccounts(alphabetized_ids)
 
-        if mode == self.comboBoxAccountOrganizerModes[1]: # Z TO A
-            self.alphabetizeAccounts(displayIds, 'backward', criteria)
+        if mode == self.comboBoxAccountOrganizerModes[1]: # Z to A
+            alphabetized_ids = self.alphabetizeIds(displayIds, 'Z to A', criteria)
+            self.sortAccounts(alphabetized_ids)
         
-    def alphabetizeAccounts(self, displayIds, direction, criteria):
+        if mode == self.comboBoxAccountOrganizerModes[2]: # Newest to Oldest
+            dated_ids = self.dateIds(displayIds, 'Newest to Oldest')
+            self.sortAccounts(dated_ids)
+        
+        if mode == self.comboBoxAccountOrganizerModes[3]: #Oldest to Newest
+            dated_ids = self.dateIds(displayIds, 'Oldest to Newest')
+            self.sortAccounts(dated_ids)
+
+    def dateIds(self, displayIds, direction):
+        
+        cursor = self.conn.cursor()
+        # get all the dated_ids from the database, they're already sorted by the nature they're added to the database in
+        dated_database_ids = []
+        for id in displayIds:
+            dated_database_ids.append(cursor.execute("SELECT dated_id FROM accounts WHERE id = ?", (id,)).fetchall())
+        dated_ids = self.getIdsFromDatabaseIds(dated_database_ids)
+        # gets the ids of the accounts that correspond with the database_ids
+        # the ids of accounts will change sometimes, the database_ids will never change dynamically
+        database_ids = []
+        for id in dated_ids:
+            database_ids.append(cursor.execute("SELECT id FROM accounts WHERE dated_id = ?", (id,)).fetchall())
+        ids = self.getIdsFromDatabaseIds(database_ids)
+
+        if direction == 'Newest to Oldest':
+            ids.reverse()
+            
+        return ids
+
+    def alphabetizeIds(self, displayIds, direction, criteria):
 
         account_name_list = []
         # gets a list of all the account names
@@ -318,7 +355,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
             account_name_list.append(self.accounts['labels_account_name'][id].text())
         # alphabetizes them while ignoring uppercase vs lowercase      THIS PART
         alphabetized_account_name_list = sorted(account_name_list, key = str.casefold)
-        if direction == 'backward':
+        if direction == 'Z to A':
             alphabetized_account_name_list.reverse()
 
         cursor = self.conn.cursor()
@@ -332,10 +369,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         # just numbers can be worked with much easier
         # this has to be done on its own since some database ids have 1 item in the list while others have 2 or 3 or 4
         # so it cannot be done by appending above id[0][0]
-        alphabetical_ids = []
-        for list in alphabetical_database_ids:
-            for id in list:
-                alphabetical_ids.append(id[0])
+        alphabetical_ids = self.getIdsFromDatabaseIds(alphabetical_database_ids)
         
         # this will check for any false positives
         # since multiple accounts can have the same account name, and that was what we are alphabetizing from,
@@ -367,10 +401,25 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 account_info = cursor.execute("SELECT account_name, username, password FROM accounts WHERE id = ?", (id,)).fetchall()
                 if criteria not in account_info[0][0].lower() and criteria not in account_info[0][1].lower():
                     alphabetical_ids.remove(id)
+        
+        return alphabetical_ids
+
+    # when we get ids from the database when we use FETCHALL, not FETCHONE, we should run this method to get just the numbers
+    def getIdsFromDatabaseIds(self, database_ids):
+        ids = []
+        for list in database_ids:
+            for id in list:
+                ids.append(id[0])
+        return ids
+        
+
+    def sortAccounts(self, sorted_ids):
+
+        cursor = self.conn.cursor()
 
         # adds the account back to the view, the 'organizing' argument for the nature parameter will keep it from
         # being added to the database for a second time
-        for id in alphabetical_ids:
+        for id in sorted_ids:
             info = cursor.execute("SELECT account_name, username, password FROM accounts WHERE id = ?", (id,)).fetchall()
             account_name = info[0][0]
             username = info[0][1]
@@ -382,18 +431,20 @@ class MyMainWindow(QtWidgets.QMainWindow):
             
             self.addAccount(self.display_accounts, id, account_name, username, password, 'organizing')
         
-        if len(alphabetical_ids) == 0:
+        if len(sorted_ids) == 0:
             self.labelHelpingSearch = QtWidgets.QLabel(self.centralwidget)
             self.labelHelpingSearch.setObjectName("labelHelpingSearch")
-            self.labelHelpingSearch.setText("No results found...\nIf you are searching for a password you will\n need to show them first!")
+            if self.onStartup:
+                self.labelHelpingSearch.setText("Create an account to get started!")
+            else:
+                self.labelHelpingSearch.setText("No results found...\nIf you are searching for a password you will\n need to show them first!")
+                self.labelHelpingSearch.setStyleSheet("QLabel {color : red}")
             self.labelHelpingSearch.setMinimumSize(200,200)
             self.labelHelpingSearch.setWordWrap(True)
-            self.labelHelpingSearch.setStyleSheet("QLabel {color : red}")
             self.labelHelpingSearch.setVisible(False)
             self.labelHelpingSearch.setAlignment(QtCore.Qt.AlignCenter)
             self.scrollAreaWidgetContents.layout().addWidget(self.labelHelpingSearch)
             self.labelHelpingSearch.setVisible(True)
-
 
     def setDecryptEncryptButtonMode(self):
         self.pushButtonShowPasswords.setEnabled(not self.passwordsDecrypted)
@@ -559,8 +610,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
                                                                             self.createNewAccountDialogui.lineEditUsername.text(),
                                                                             self.createNewAccountDialogui.lineEditPassword.text(),
                                                                             'creating'))
-        self.createNewAccountDialog.accepted.connect(lambda: self.organizeAccounts(self.getOrganizeMode(), self.getDisplayIds(), 
-                                                                                   self.lineEditSearchAccounts.text()))
+        self.createNewAccountDialog.accepted.connect(self.filterAccounts)
         self.createNewAccountDialog.show()
 
     def openDecryptFirstDialog(self):
@@ -663,6 +713,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.private_key_file_path = None
         self.passwordsDecrypted = False
         self.setDecryptEncryptButtonMode()
+        self.filterAccounts()
     
     def getCurrentId(self):
 
@@ -682,10 +733,12 @@ class MyMainWindow(QtWidgets.QMainWindow):
         username = self.createNewAccountDialogui.lineEditUsername.text()
         password = self.createNewAccountDialogui.lineEditPassword.text()
         id = self.getNextId()
+        dated_id = self.current_dated_id + 1
+        self.current_dated_id += 1
         # Encrypt the password using RSA public key
         encrypted_password = self.encrypt_password(password)
         # Add the account to the SQLite database
-        self.add_account_to_db(id, account_name, username, encrypted_password)
+        self.add_account_to_db(id, account_name, username, encrypted_password, dated_id)
 
     def updateAccount(self, id):
 
