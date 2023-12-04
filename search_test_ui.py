@@ -213,7 +213,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.setWindowTitle(_translate("Password Manager", "Password Manager"))
 
     def getOrganizeMode(self):
         return self.comboBoxAccountOrganizer.itemText(self.comboBoxAccountOrganizer.currentIndex())
@@ -822,7 +822,7 @@ class Ui_Create_New_Account_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Create Account", "Create Account"))
         self.label.setText(_translate("Dialog", "Create New Account"))
         self.labelAccount.setText(_translate("Dialog", "Account:"))
         self.labelUsername.setText(_translate("Dialog", "Username:"))
@@ -864,8 +864,8 @@ class Ui_Delete_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.label.setText(_translate("Dialog", "You are about to delete this account. Are you sure you want to continue? This action cannot be undone."))
+        Dialog.setWindowTitle(_translate("Warning", "Warning"))
+        self.label.setText(_translate("Warning", "You are about to delete this account. Are you sure you want to continue? This action cannot be undone."))
 
 
 class Ui_Edit_Dialog(object):
@@ -929,7 +929,7 @@ class Ui_Edit_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("New Account", "New Account"))
         self.label.setText(_translate("Dialog", "Username:"))
         self.label_2.setText(_translate("Dialog", "Password:"))
 
@@ -1019,8 +1019,8 @@ class Ui_Drag_and_Drop_Dialog(QtWidgets.QDialog):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.label.setText(_translate("Dialog", "Drag and drop your private_key.pem file here to decrypt your passwords"))
+        Dialog.setWindowTitle(_translate("Password Select", "Password Select"))
+        self.label.setText(_translate("Password Select", "Drag and drop your private_key.pem file here to decrypt your passwords"))
 
 class Ui_Wrong_Pem_Error_Dialog(QtWidgets.QDialog):
     
@@ -1055,8 +1055,8 @@ class Ui_Wrong_Pem_Error_Dialog(QtWidgets.QDialog):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.label.setText(_translate("Dialog", "Error decrypting passwords. Are you sure you\'re using the right .pem file?"))
+        Dialog.setWindowTitle(_translate("Error", "Error"))
+        self.label.setText(_translate("Error", "Error decrypting passwords. Are you sure you\'re using the right .pem file?"))
 
 class Ui_Decrypt_First_Dialog(QtWidgets.QDialog):
 
@@ -1088,7 +1088,7 @@ class Ui_Decrypt_First_Dialog(QtWidgets.QDialog):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Decrypt Error", "Decrypt Error"))
         self.label.setText(_translate("Dialog", "To edit or delete an account you must decrypt the information first."))
 
 if __name__ == "__main__":
