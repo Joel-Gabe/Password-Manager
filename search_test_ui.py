@@ -197,7 +197,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.statusbar = QtWidgets.QStatusBar(self)
         self.statusbar.setObjectName("statusbar")
         self.setStatusBar(self.statusbar)
-
+        self.setWindowIcon(QtGui.QIcon('232962.png'))
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
 
