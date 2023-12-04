@@ -120,8 +120,6 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.resize(800, 600)
         self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setObjectName("centralwidget")
-
-
         self.pushButtonCreateNewAccount = QtWidgets.QPushButton(self.centralwidget)
         self.pushButtonCreateNewAccount.setText("Create New Account")
         self.pushButtonCreateNewAccount.setObjectName("pushButtonCreateNewAccount")
