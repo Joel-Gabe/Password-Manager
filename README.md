@@ -1,5 +1,6 @@
 # Password-Manager
-Password Manager Project CS151  
+CS151   
+Password Manager Project   
 Created by Gabe Foster and Joel Robinson
 
 # About
